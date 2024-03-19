@@ -1,13 +1,11 @@
-from flask import *
+from flask import Flask, request
 from flask_socketio import SocketIO, emit
-from flask_socketio import *
 import json
 import codecs
 import pickle
 import numpy as np
 
-
-class secaggserver:
+class SecAggServer:
     def __init__(self, host, port, n, k):
         self.n = n
         self.k = k
@@ -33,7 +31,6 @@ class secaggserver:
         return pickle.loads(codecs.decode(s.encode(), 'base64'))
 
     def register_handles(self):
-
         @self.socketio.on("wakeup")
         def handle_wakeup():
             print("Recieved wakeup from", request.sid)
@@ -56,8 +53,7 @@ class secaggserver:
             self.respset.add(request.sid)
             print('keys: ', self.client_keys)
             if (self.numkeys == self.n):
-                print
-                "Starting public key transfer"
+                print("Starting public key transfer")
                 ready_clients = list(self.ready_client_ids)
                 key_json = json.dumps(self.client_keys)
                 for rid in ready_clients:
@@ -88,8 +84,7 @@ class secaggserver:
 
         @self.socketio.on('secret')
         def handle_secret(data):
-            print()
-            request.sid, "sent SECRET"
+            print(request.sid, "sent SECRET")
             self.aggregate += self.weights_decoding(data['secret'])
             self.secretresp += 1
             if self.secretresp == self.k and self.othersecretresp == self.k:
@@ -98,8 +93,7 @@ class secaggserver:
 
         @self.socketio.on('rvl_secret')
         def handle_secret_reveal(data):
-            print()
-            request.sid, "sent shared secrets"
+            print(request.sid, "sent shared secrets")
             self.aggregate += self.weights_decoding(data['rvl_secret'])
             self.othersecretresp += 1
             if self.secretresp == self.k and self.othersecretresp == self.k:
@@ -114,10 +108,10 @@ class secaggserver:
             print(self.ready_client_ids)
 
     def start(self):
-        self.socketio.run(self.app, host=self.host, port=self.port)
+        self.socketio.run(self.app, host=self.host, port=self.port, debug=False)
 
 
 if __name__ == '__main__':
-    server = secaggserver("127.0.0.1", 2019, 3, 2)
+    server = SecAggServer("127.0.0.1", 2019, 3, 2)
     print("listening on 127.0.0.1:2019")
     server.start()
